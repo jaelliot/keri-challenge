@@ -1,0 +1,61 @@
+---
+description: Standards for KERI Asynchronous Event Processing, Coroutines, and I/O
+globs: ["src/**/*.py"]
+alwaysApply: false
+---
+
+## Use when
+-   Implementing asynchronous I/O operations (network, disk).
+-   Designing the event loop and coroutine architecture for KERI components.
+-   Handling KERI event promulgation and exchange.
+-   Managing TCP/UDP/HTTP transport layers.
+-   Processing event streams (CESR).
+
+## Do
+-   **Core Philosophy**:
+    -   Use `asyncio` as the foundation for concurrency.
+    -   Design for **Event Sourcing**: The system state is derived from the sequential processing of the KEL.
+-   **Concurrency**:
+    -   Use `async/await` syntax for all I/O-bound operations.
+    -   Leverage `hio` (Hierarchical I/O) or `trio` concepts if required by the core KERI library (`keripy`), otherwise stick to standard `asyncio`.
+    -   Implement non-blocking parsers for incoming CESR streams.
+-   **Event Handling**:
+    -   **Idempotency**: All event processing MUST be idempotent. Re-processing the same signed event (same sequence number and digest) should have no side effects or be detected as a duplicate.
+    -   **First-Seen Policy**: Explicitly handle race conditions. The first valid event for a sequence number wins; subsequent conflicting events are duplicity.
+    -   **Ordering**: Strict ordering is required. Events must be processed in sequence number order. Buffer out-of-order events or request missing precursors.
+-   **Transport**:
+    -   Keep transport layers (HTTP, TCP) dumb. They should just pump bytes to the parser.
+    -   Use `aiohttp` for HTTP clients/servers.
+-   **Error Handling**:
+    -   Use `try/except` blocks around `await` calls to handle network timeouts and disconnections gracefully.
+    -   Log correlation IDs (like AIDs) with every async task for traceability.
+
+## Don't
+-   **No Task Queues**: Do **NOT** use Celery, Redis, or external message brokers. KERI's "queue" is the KEL itself and the direct P2P connections.
+-   **No Blocking**: Never call blocking code (e.g., `time.sleep`, synchronous `requests`, heavy CPU compute) inside an async loop. Offload heavy crypto to a thread pool if necessary (though `libsodium` is often fast enough).
+-   **No Global State**: Avoid shared global state between coroutines unless protected by explicit context (like an Agent's database instance).
+-   **No "Fire and Forget"**: Async tasks should be tracked. Unhandled exceptions in background tasks can crash the event loop or fail silently.
+
+## Notes / Examples
+-   **Async Structure**:
+    ```python
+    async def process_stream(connection):
+        parser = Parser()
+        while True:
+            data = await connection.read()
+            if not data: break
+            events = parser.parse(data)
+            for event in events:
+                await event_handler.handle(event)
+    ```
+-   **First-Seen Logic**:
+    ```python
+    async def handle_event(self, event):
+        existing = await self.db.get_event(event.pre, event.sn)
+        if existing:
+            if existing.digest == event.digest:
+                return # Idempotent replay
+            else:
+                raise DuplicityError(event)
+        await self.validate_and_save(event)
+    ```

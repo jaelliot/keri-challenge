@@ -1,0 +1,68 @@
+---
+description: KERI Security Standards: Cryptography, Key Management, and End-Verifiability
+globs: ["**/*.py", "**/*.tf", "**/*.hcl"]
+alwaysApply: true
+---
+
+## Use when
+- Implementing or modifying cryptographic operations (signing, hashing, verifying).
+- Managing Key Event Logs (KELs) and Autonomic Identifiers (AIDs).
+- Handling private keys, seeds, or salts.
+- Implementing Pre-Rotation or Duplicity Detection logic.
+- Validating external events or data (Zero Trust).
+- Configuring IAM permissions or infrastructure security.
+
+## Do
+
+### End-Verifiability (Zero Trust)
+- Treat all external inputs as untrusted until cryptographically verified against a KEL.
+- Implement "Signed-Everything": verify signatures on every received event.
+- Enforce **First-Seen Policy**: The first valid event for a sequence number is the *only* valid event.
+- **Gateway-First Authentication (ADR-015)**: Trust headers validated by a gateway (Kong/Phoenix). Do not implement JWT validation or authentication logic in application code.
+
+### Cryptography & Encoding
+- Use standard, open-source libraries (e.g., `pysodium` for Ed25519, `blake3`). **Never roll your own crypto.**
+- Use **CESR** (Composable Event Streaming Representation) for all crypto primitives to ensure type safety and compact encoding.
+- Hashing: Use `Blake3` or `Blake2b` (256-bit min) for post-quantum resistance in pre-rotation commitments.
+
+### Key Management
+- **Pre-Rotation**: Always commit to the *next* rotation keys (via hash) in the current establishment event. Never expose next keys until they are rotated in.
+- **Secret Storage**: Store private keys/seeds in secure enclaves or encrypted storage. Never log them.
+- **Salting**: Use high-entropy random salts (128-bit min) for key derivation.
+
+### Secret Redaction (Logs)
+- **Unsafe by Default**: Assume all variables contain secrets/PII unless explicitly marked safe.
+- **Explicit Redaction**: Use `structlog` processors or custom types to redact sensitive fields before logging.
+  ```python
+  # Correct: Explicit redaction in logs
+  logger.info("config_loaded", api_key="***REDACTED***")
+  ```
+
+### AWS IAM Hardening
+- **Least Privilege**: Grant explicit actions (e.g., `s3:GetObject`) rather than wildcards (`*`).
+- **Explicit Resources**: Restrict permissions to specific ARNs (e.g., `arn:aws:s3:::gideon-data/*`).
+- **Service Principals**: Trust explicit services (e.g., `lambda.amazonaws.com`), not `*`.
+
+## Don't
+
+- **Middle-Man Trust**: Don't rely on transport-layer security (TLS/HTTPS) alone. Authenticity comes from the KEL, not the pipe.
+- **Key Exposure**:
+    - Don't expose pre-rotated keys before their rotation event.
+    - Don't reuse keys across different AIDs unless explicitly intended.
+- **Hardcoded Secrets**: Never hardcode seeds, salts, or private keys in source code.
+- **Weak Crypto**: Don't use weak hashes (MD5, SHA1) or short keys (<128-bit security).
+- **IAM Anti-Patterns**:
+    - ❌ **Wildcard Actions**: `Action: "*"`
+    - ❌ **Wildcard Resources**: `Resource: "*"`
+    - ❌ **Admin Policies**: `AdministratorAccess`
+
+## Notes / Examples
+
+- **Pre-Rotation Pattern**:
+    1.  Generate Current Key Set $K_n$ and Next Key Set $K_{n+1}$.
+    2.  Publish $K_n$ (public keys) and $Hash(K_{n+1})$ in the event.
+    3.  Keep $K_{n+1}$ (public & private) hidden until the *next* rotation.
+- **CESR Encoding**:
+    - Use CESR prefixes (e.g., `D` for Ed25519 public key, `E` for Blake3 digest) to strictly type all crypto material.
+- **End-Verifiability**:
+    - "The Middle is Irrelevant." If the signature verifies against the KEL, the data is authentic, regardless of how it arrived (UDP, TCP, sneakernet).

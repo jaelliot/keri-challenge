@@ -1,0 +1,86 @@
+---
+description: KERI Architecture: Event Sourcing, 5 Ws, and Distributed Patterns
+globs: ["**/*.py"]
+alwaysApply: false
+---
+
+## Use when
+- Designing or modifying core library components (`keripy` logic).
+- Implementing one of the "5 Ws" (Wallets, Witnesses, Watchers, Web, Wizards).
+- Handling event streams, key management, or cryptography.
+- Refactoring code to align with KERI specifications (End-Verifiability).
+
+## Do
+
+### Architecture
+-   **Structure**: Follow the **5 Ws** model for application boundaries:
+    -   **Wallets**: Key management and controller logic (Edge).
+    -   **Witnesses**: Event logging and duplicity detection (Infrastructure).
+    -   **Watchers**: Verification and auditing (Infrastructure).
+    -   **Web**: Transport and API layers.
+    -   **Wizards**: Onboarding and configuration utilities.
+-   **Core vs. App**:
+    -   Keep core protocol logic (event generation, parsing, signing) pure and verifiable.
+    -   Isolate side effects (network I/O, database persistence) into interface layers or "Doers".
+-   **Event Sourcing**:
+    -   Treat the **Key Event Log (KEL)** as the single source of truth.
+    -   Derive current state (keys, thresholds) by replaying the KEL.
+    -   Store raw signed events (`.keri` or CESR streams) alongside derived state.
+
+### Domain Separation (ADR-001)
+-   **Domain Model (WHAT)**: Interfaces, contracts, logic. Transport-agnostic.
+-   **Execution Model (HOW)**: Transports (HTTP/TCP), Persistence (LMDB), Async loop.
+-   **Rule**: Domain code MUST NOT import transport/execution code.
+
+### Patterns
+-   **Asynchronous I/O**:
+    -   Use **Coroutines** (`asyncio`) for all I/O-bound operations (network, disk).
+    -   Ensure high throughput for event processing.
+-   **Parsing**:
+    -   Use **Stream Parsers** for CESR (Composable Event Streaming Representation).
+    -   Detect message boundaries using the `v` (version) field and CESR headers.
+-   **Cryptography**:
+    -   Use **Pre-Rotation**: Always generate next key set and commit to its hash (dig) in the current rotation.
+    -   **OOBI**: Use Out-Of-Band Introductions (URL + AID) for bootstrapping trust.
+
+### Data Flow
+-   **First-Seen Policy**: In network components, strict ordering matters. The first valid event for a sequence number wins; subsequent ones are duplicity.
+-   **Validation Pipeline**:
+    1.  **Parse**: Extract primitive from stream (CESR).
+    2.  **Verify**: Check signature against *current* key state (or Pre-Rotation commitment).
+    3.  **Validate**: Check logic (sequence numbers, consistency).
+    4.  **Accept**: Append to KEL and update state.
+
+## Don't
+
+### Anti-Patterns
+-   **Centralized Trust**: Never rely on a central server or registry for truth. Trust only the signed KEL.
+-   **Blocking I/O**: Do not block the main event loop.
+-   **Implicit State**: Don't rely on database state that cannot be reconstructed from the KEL.
+-   **Hardcoded Configuration**: Avoid hardcoding IPs or ports; use OOBIs for discovery.
+-   **Legacy Middleware**: Avoid "Legal SaaS" patterns like Redis job queues or AWS Lambda dependencies unless wrapped as a generic transport/storage provider.
+
+### Security
+-   **Private Keys**: Never expose private keys. Never transmit them.
+-   **Next Keys**: Never expose the *next* key set public keys until the rotation event. Only the hash (digest) should be visible.
+
+## Notes / Examples
+
+### Folder Structure (Guideline)
+```text
+src/
+  core/           # Protocol logic (Events, Crypto, CESR)
+    eventing/     # KEL, TEL logic
+    crypto/       # Signatures, Hashing
+    parsing/      # CESR parsers
+  app/            # Application layer (The 5 Ws)
+    cli/          # Command line interface
+    witness/      # Witness server logic
+    wallet/       # Key management
+  db/             # Persistence (LMDB/Baser)
+```
+
+### Event Lifecycle
+1.  **Incept (`icp`)**: Create AID, bind keys.
+2.  **Rotate (`rot`)**: Change keys, reveal old next-keys, commit new next-keys.
+3.  **Interact (`ixn`)**: Anchor data to the KEL.

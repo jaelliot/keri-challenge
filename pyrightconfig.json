@@ -1,0 +1,27 @@
+{
+    "include": [
+        "dataset-builder-core/core-service/app",
+        "tests"
+    ],
+    "exclude": [
+        "**/node_modules",
+        "**/__pycache__",
+        "**/.*",
+        "dataset-builder-core/frontend",
+        ".venv",
+        "venv"
+    ],
+    "executionEnvironments": [
+        {
+            "root": "dataset-builder-core/core-service"
+        }
+    ],
+    "pythonVersion": "3.12",
+    "pythonPlatform": "Linux",
+    "typeCheckingMode": "basic",
+    "useLibraryCodeForTypes": true,
+    "reportMissingImports": true,
+    "reportMissingTypeStubs": false,
+    "reportUnusedVariable": "warning",
+    "reportPrivateUsage": "warning"
+}

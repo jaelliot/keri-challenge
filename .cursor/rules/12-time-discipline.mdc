@@ -1,0 +1,36 @@
+---
+description: Time discipline and clock usage for KERI services
+globs: ["**/*.py"]
+---
+
+## Role & Intent
+
+Provide authoritative guidance for handling time inside KERI. Enforce a single clock abstraction, UTC persistence, monotonic measurements, and deterministic testing.
+
+## Core Principles
+
+- **Clock abstraction only.** All application code uses `clock.Clock`; direct `datetime.now()` or `time.sleep()` calls are forbidden outside `src/keri/core/clock`.
+- **Zero time imports.** Application code should avoid importing `time` or `datetime` for getting current time.
+- **UTC everywhere.** Persist and emit timestamps as ISO-8601 UTC.
+- **Monotonic intervals.** Use monotonic clocks for duration measurements.
+- **Cancelable waits.** Use `await clock.sleep()` which respects `asyncio` cancellation.
+- **Deterministic testing.** Tests inject `FakeClock` and advance time explicitly.
+
+## Implementation Requirements
+
+- `src/keri/core/clock.py` defines the `Clock` protocol.
+- `src/keri/core/clock/real.py` implements stdlib-backed `RealClock`.
+- `tests/clock/fake.py` implements `FakeClock`.
+- Consumers request `Clock` in `__init__`.
+
+## Testing Guidance
+
+- Use `FakeClock` in unit tests.
+- Replace `asyncio.sleep` with `await clock.sleep`.
+- Use `clock.advance(seconds)` to jump forward in time.
+
+## Anti-Patterns (Zero Tolerance)
+
+- Calling `datetime.now()` or `time.time()` directly.
+- Calling `time.sleep()` (blocking) or `asyncio.sleep()` (non-deterministic).
+- Persisting timestamps in local time.

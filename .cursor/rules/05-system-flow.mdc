@@ -1,0 +1,38 @@
+---
+description: High-level data flow and pipeline stages (Ingestion, Processing, Transformation)
+globs: ["**/*.py"]
+alwaysApply: false
+---
+
+## Use when
+- Understanding the end-to-end KERI data pipeline.
+- Implementing features that span multiple pipeline stages (Ingestion, Processing, Transformation).
+- Designing asynchronous event interactions.
+
+## Do
+- **Ingestion Flow (Event Sourcing)**:
+  - **Sources**: Support entry via **API** (Direct Mode) or **Witness/Watcher Streams** (Indirect Mode).
+  - **Validation**: Validate CESR encoding and signatures immediately upon receipt.
+  - **Storage**: Store **raw event logs (KEL/KERL)** in append-only storage before any state derivation.
+- **Processing Flow (State Derivation)**:
+  - **Derive**: Process KEL → Current Key State (Signers, Thresholds, Witnesses).
+  - **Verify**: Enforce **First-Seen Policy** (drop duplicitous events).
+  - **Notify**: Emit asynchronous events (via `asyncio`) for state changes to Watchers/UI.
+- **Transformation Flow (OOBI & Discovery)**:
+  - **Resolve**: Transform OOBI URLs → Discovered AIDs/Endpoints.
+  - **Percolate**: Propagate discovered endpoints to the routing table (SPED).
+- **Feedback Loops**:
+  - **Duplicity Detection**: If inconsistent events are found, flag for **Duplicity** and halt trust.
+  - **Recovery**: Allow superseded recovery events (Rotation) to fork and restore the authoritative trunk.
+
+## Don't
+- **Bypass Validation**: Don't process or store events without verifying signatures and CESR structure.
+- **Mutable History**: Don't modify existing KEL entries; append only.
+- **Blocking I/O**: Don't block the main event loop during processing; use `asyncio`.
+- **Implicit Trust**: Don't trust data based on transport (IP/DNS); verify signatures only.
+
+## Notes / Examples
+- **Pipeline Stages**:
+  1.  **Ingestion**: CESR Stream -> Raw KEL (Append-Only)
+  2.  **Processing**: KEL -> Key State (Validation, Duplicity Check)
+  3.  **Transformation**: Key State + OOBI -> Routing/Discovery Tables

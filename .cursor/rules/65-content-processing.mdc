@@ -1,0 +1,45 @@
+---
+description: Standards for Event Processing and Message Handling (CESR, KEL, Validation)
+globs: ["keri/**/*.py", "src/keri/**/*.py"]
+alwaysApply: false
+---
+
+## Use when
+- Implementing or modifying CESR parsing or serialization logic.
+- Processing Key Event Logs (KEL) or Key Event Receipt Logs (KERL).
+- Handling KERI message pipelines (inbound/outbound).
+- Validating event signatures, sequence numbers, and digests.
+
+## Do
+- **CESR Processing**:
+  - Use **Stream Parsers** to detect message boundaries and types.
+  - Implement strict parsing for CESR primitives (Base64 URL-safe).
+  - Handle both text (T) and binary (B) domains seamlessly.
+- **Event Validation (First-Seen)**:
+  - Implement **"First-Seen Wins"** logic: The first valid event for a sequence number is the *only* valid event.
+  - Detect and flag **Duplicity** immediately upon seeing a conflicting event.
+  - Validate signatures against the *current* Key State (established by the previous event).
+- **Data Flow**:
+  - Process events in **strict order** (Sequence Number `N` must follow `N-1`).
+  - Buffer out-of-order events (escrow) until missing predecessors arrive.
+  - Store verified events in an append-only log (KEL/KERL).
+- **Architecture**:
+  - Use **Pipelines** for message processing stages (Parse -> Validate -> Apply -> Store).
+  - Use **Coroutines** (`asyncio`) for high-throughput I/O handling.
+
+## Don't
+- **Blocking I/O**: Do not use blocking I/O in the event processing loop; use `asyncio`.
+- **Loose Validation**: Don't accept events without verifying the signature against the correct key state.
+- **State Mutation**: Don't mutate the KEL in place; it is an append-only verifiable log.
+- **Infrastructure Dependencies**: Don't rely on external databases (Redis, MongoDB) for core logic; the file system (LMDB or similar) is often sufficient for the KEL.
+- **Implicit Trust**: Don't trust the transport layer; validate the crypto at the application layer.
+
+## Notes / Examples
+- **Message Types**:
+  - `icp` (Inception): Establishes the identifier and initial keys.
+  - `rot` (Rotation): Changes keys and commits to next keys.
+  - `ixn` (Interaction): Anchors data without key change.
+- **Pre-Rotation**:
+  - Ensure `rot` events reveal the *previous* next keys and commit to *new* next keys.
+- **Escrow**:
+  - Out-of-order events (e.g., receiving `sn=5` before `sn=4`) must be escrowed, not discarded, to handle async network delivery.

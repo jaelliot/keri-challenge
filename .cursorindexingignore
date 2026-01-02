@@ -1,0 +1,108 @@
+# .cursorindexingignore
+
+# Python: Bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Python: Virtual Environments
+venv/
+.venv/
+env/
+.env/
+
+# Python: Build & Distribution
+build/
+dist/
+wheels/
+*.egg-info/
+.eggs/
+
+# Python: Testing, Coverage & Linting
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+coverage.xml
+
+# Python: Jupyter
+.ipynb_checkpoints
+
+# Python: Large Lock Files (noise for semantic search)
+poetry.lock
+Pipfile.lock
+uv.lock
+pdm.lock
+
+# Credentials and secrets
+.env
+.env.*
+*.pem
+*.key
+*.cert
+*.crt
+*.p12
+*.pfx
+*.keystore
+credentials.json
+service-account.json
+google-credentials.json
+aws-credentials.json
+*-credentials.json
+secrets.yaml
+secrets.yml
+secrets.json
+secrets.toml
+
+# Authentication tokens and configs
+.netrc
+.dockercfg
+.docker/config.json
+.aws/
+.kube/
+.ssh/
+
+# Local configuration with potential secrets
+config.local.*
+settings.local.*
+local.settings.*
+local.config.*
+*config.private.*
+
+# Database files
+*.sqlite
+*.db
+*.rdb
+dump.rdb
+
+# Log files
+logs/
+*.log
+
+# Cache directories
+.cache/
+
+# IDE settings
+.vscode/settings.json
+.idea/
+*.sublime-workspace
+
+# Directories likely to contain sensitive data
+secrets/
+private/
+secure/
+confidential/
+
+# API keys and tokens
+.api_key
+.token
+*_token
+*_key
+api_keys.txt
+tokens.txt
+
+# Certificate directories
+certs/
+certificates/
+ssl/
