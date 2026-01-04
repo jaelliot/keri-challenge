@@ -1,0 +1,62 @@
+---
+applyTo: "app/api/**/*.py,app/schemas/**/*.py,app/messages/**/*.py"
+# Standards for KERI API design, serialization, and messaging
+---
+## Use when
+- Designing or modifying KERI-compliant API endpoints.
+- Defining CESR/JSON serialization structures for KERI messages.
+- Implementing OOBI (Out-Of-Band Introduction) discovery endpoints.
+- Handling asynchronous KERI event streams (TCP/HTTP).
+
+## Do
+- **Serialization (CESR First)**:
+    - Prioritize **CESR (Composable Event Streaming Representation)** for all cryptographic primitives and event messages.
+    - Support generic serialization (JSON, CBOR, MsgPack) only when wrapping CESR payloads or for specific external interoperability (e.g., OOBI).
+    - Ensure all field maps (JSON objects) use **canonical ordering** (insertion order) to guarantee reproducible hashing for SAID derivation.
+- **Message Structure**:
+    - Follow strict KERI message field ordering: `v` (version), `t` (type), `d` (digest/SAID), `i` (AID).
+    - Use standard KERI message types: `icp` (inception), `rot` (rotation), `ixn` (interaction), `qry` (query), `rpy` (reply).
+    - Use **SAID (Self-Addressing Identifier)** for content-addressable data references.
+- **Transport & Endpoints**:
+    - Implement **OOBI** endpoints (`/oobi/{AID}`) for bootstrapping connections.
+    - Use specific route paths for KERI operations (e.g., `/kel` for Key Event Logs, `/witness` for witness services).
+    - Support **Streaming** for TCP connections (pipeline processing) and **Request/Response** for HTTP.
+- **Async & Reactive**:
+    - Use `asyncio` for all I/O bound operations.
+    - Design for **First-Seen Policy**: Handle race conditions to reject duplicitous events immediately.
+    - Return `202 Accepted` for events queued for witnessing/processing.
+
+## Don't
+- **Legacy Patterns**:
+    - Don't use "Envelope" wrappers (`data`, `meta`) around KERI messages; the message *is* the envelope.
+    - Don't expose internal database IDs; use AIDs or SAIDs.
+    - **Exception for Challenge**: This challenge explicitly requires **POST** for registration and **GET** for reading data. Standard KERI "RUN" patterns are overridden for this specific API contract.
+- **Security**:
+    - Don't trust the transport layer (TLS is optional/secondary); trust the **Signature** on the message.
+    - Don't modify the byte-level serialization of a message after signing (breaks the signature).
+- **Tech Stack**:
+    - Don't rely on Redis or external message brokers for core KERI event ordering (ordering is internal to the KEL).
+    - Don't use "Session Tokens" for KERI operations; use signed KERI messages (`qry`/`rpy`) for authenticated exchanges.
+
+## Notes / Examples
+- **Message Example (JSON Serialization)**:
+  ```json
+  {
+    "v": "KERICAACAAJSONAAKp.",
+    "t": "icp",
+    "d": "ELq7...",
+    "i": "ELq7...",
+    "s": "0",
+    "kt": "1",
+    "k": ["DQK..."],
+    "n": ["ELq..."],
+    "bt": "0",
+    "b": [],
+    "c": [],
+    "a": []
+  }
+  ```
+- **OOBI URL Example**:
+  `http://8.8.8.8:8080/oobi/EPR7FWsN3tOM8PqfMap2FRfF4MFQ4v3ZXjBUcMVtvhmB?role=witness`
+- **SAID Derivation**: 
+  Ensure the `d` field is replaced with a dummy of correct length before hashing, then replaced with the hash (Self-Addressing).

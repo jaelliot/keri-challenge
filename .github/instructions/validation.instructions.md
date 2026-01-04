@@ -1,0 +1,114 @@
+---
+applyTo: "**/*.py"
+# Input validation and sanitization standards for KERI/Python
+---
+# Input Validation Standards
+
+## Use When
+- Processing user input (API requests, CLI args).
+- Parsing event streams (CESR).
+- Sanitizing data before storage or display.
+
+## Core Principles
+
+1.  **Parse, don't validate**: Use Pydantic to parse input into structured objects. If parsing fails, the input is invalid.
+2.  **Validate structure AND semantics**: Type checks + format checks + business rules.
+3.  **Fail-fast**: Reject invalid input immediately with clear errors.
+4.  **Allowlists over blocklists**: Explicitly define what is allowed.
+5.  **Adversarial Mindset**: Assume all input is malicious.
+
+## Do
+
+### Schema-Based Validation (Pydantic)
+
+Use **Pydantic** for all data modeling and validation.
+
+```python
+from pydantic import BaseModel, EmailStr, Field, field_validator
+import re
+
+class CreateUserRequest(BaseModel):
+    email: EmailStr
+    password: str = Field(min_length=8)
+    tenant_id: str = Field(pattern=r"^[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}$")
+
+    @field_validator("email")
+    @classmethod
+    def validate_domain(cls, v: str) -> str:
+        domain = v.split("@")[1]
+        blocked_domains = {"tempmail.com", "throwaway.com"}
+        if domain in blocked_domains:
+            raise ValueError("Email domain not allowed")
+        return v
+```
+
+### Exception for Challenge (Rubric Schema)
+
+For the **Register** endpoint, enforce the specific schema defined in the rubric:
+
+```python
+class RegistrationData(BaseModel):
+    d: str = Field(..., description="SAID value as CESR")
+    i: str = Field(..., description="AID value as CESR")
+    n: str = Field(..., description="Name")
+```
+
+### CESR Stream Parsing
+
+For KERI event streams, use the strict stream parsers provided by `keripy`.
+
+```python
+from keri.core import eventing
+
+def process_stream(ims: bytes):
+    try:
+        # Strict parsing of CESR stream
+        kever = eventing.Kever(serder=serder, ...)
+    except eventing.ValidationError as e:
+        # Log and drop invalid events
+        logger.warning(f"Invalid event: {e}")
+```
+
+### Sanitization
+
+- **HTML**: If handling HTML (rare in KERI core), use `bleach` or similar allowlist-based sanitizer.
+- **SQL**: Never interpolate strings. Use parameterized queries if using SQL.
+- **Paths**: Validate file paths to prevent traversal attacks.
+
+```python
+from pathlib import Path
+
+def safe_path(base: Path, user_input: str) -> Path:
+    target = (base / user_input).resolve()
+    if not target.is_relative_to(base):
+        raise ValueError("Path traversal attempt")
+    return target
+```
+
+## Don't
+
+❌ **Don't use `assert` for validation**:
+```python
+# WRONG: asserts can be optimized out
+def process(data):
+    assert data["id"] is not None
+```
+
+❌ **Don't rely on client-side validation**:
+API clients can bypass UI checks. Always validate on the server.
+
+❌ **Don't use unsanitized input in shell commands**:
+Avoid `subprocess.call(f"cmd {user_input}")`. Use `subprocess.run(["cmd", user_input])`.
+
+## Error Response Format
+
+Return structured validation errors (standard Pydantic behavior or custom wrapper).
+
+```json
+{
+  "error": "validation_failed",
+  "details": [
+    { "loc": ["email"], "msg": "value is not a valid email address", "type": "value_error.email" }
+  ]
+}
+```

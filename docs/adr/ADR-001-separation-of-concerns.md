@@ -230,3 +230,11 @@ Before writing ANY feature code:
 
 3. **Verify separation**
    - Ensure domain logic tests can run with simple mocks, without spinning up containers or networks.
+
+---
+
+## References
+
+- [Architecture Instructions](../../.github/instructions/architecture-py.instructions.md)
+- [System Flow Instructions](../../.github/instructions/system-flow.instructions.md)
+- [Project Charter Instructions](../../.github/instructions/project-charter.instructions.md)

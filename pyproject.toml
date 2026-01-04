@@ -1,235 +1,96 @@
-# Software/DataHarvester/pyproject.toml
-
 [build-system]
-requires = ["setuptools>=45", "wheel"]
+requires = ["setuptools>=80.9.0", "wheel>=0.45.1"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "dataset-builder"
-version = "0.1.0"
-description = "Dataset Builder project for Demeter"
-requires-python = "==3.12.10"
+name = "keri"
+version = "2.0.0-dev3"
+description = "Key Event Receipt Infrastructure"
+readme = "README.md"
+requires-python = "==3.14.2"
+license = {text = "Apache Software License 2.0"}
 authors = [
-    { name = "Jay-Alexander Elliot", email = "11063158@uvu.edu" },
+    {name = "Samuel M. Smith", email = "smith.samuel.m@gmail.com"},
+    {name = "Jay-Alexander Elliot", email = "alexander.elliot.it@protonmail.com"},
+]
+keywords = ["keri", "cryptography", "decentralized-identity"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: Unix",
+    "Operating System :: POSIX",
+    "Operating System :: Microsoft :: Windows",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: Implementation :: CPython",
+    "Topic :: Utilities",
 ]
 
 dependencies = [
-    "motor>=3.0.0", # Example, adjust as needed
-    "pymongo>=4.0.0", # Example, adjust as needed
-    # Add other core dependencies here
+    "lmdb>=1.7.3",
+    "pysodium>=0.7.18",
+    "blake3>=1.0.5",
+    "msgpack>=1.1.0",
+    "cbor2>=5.6.5",
+    "multidict>=6.6.3",
+    "ordered-set>=4.1.0",
+    "hio>=0.7.14",
+    "multicommand>=1.0.0",
+    "jsonschema>=4.24.0",
+    "falcon>=4.0.2",
+    "hjson>=3.1.0",
+    "PyYaml>=6.0.2",
+    "apispec>=6.8.2",
+    "mnemonic>=0.21",
+    "PrettyTable>=3.16.0",
+    "http_sfv>=0.9.9",
+    "cryptography>=45.0.5",
+    "semver>=3.0.4",
+    "qrcode>=8.2",
 ]
 
-# Define optional dependencies, including for development
 [project.optional-dependencies]
 dev = [
-    "black>=24.0.0",
-    "ruff>=0.4.0", # Ruff now handles isort functionality
-    "mypy>=1.8.0",
     "pytest>=8.0.0",
-    "pytest-asyncio>=0.23.0",
-    "pytest-mock>=3.12.0",
-    "watchdog>=4.0.0", # For file watching during development
-    "pre-commit>=3.6.0", # For managing pre-commit hooks
-    "boto3-stubs[s3,dynamodb]", # Existing dev dep
-    "moto", # Existing dev dep
-    "python-dotenv>=1.0.0", # For .env file handling
-    "types-python-dotenv>=0.1.5",
-    "pydantic-settings>=2.0.0",
-    # Add other dev-specific tools here
+    "pytest-cov>=4.1.0",
+    "coverage[toml]>=7.4.0",
 ]
+
+[project.urls]
+Homepage = "https://github.com/WebOfTrust/keripy"
+Documentation = "https://keri.readthedocs.io/"
+Changelog = "https://keri.readthedocs.io/en/latest/changelog.html"
+"Issue Tracker" = "https://github.com/WebOfTrust/keripy/issues"
 
 [tool.setuptools.packages.find]
-where = ["dataset-builder-core/core-service"] # Adjust if your main package source is elsewhere
-include = ["app*"] # Include the app directory and its submodules
-exclude = ["tests*", "docs*"]
+where = ["src"]
 
+[tool.setuptools.package-data]
+keri = ["**/*.json", "**/*.cesr"]
 
-# --- Linter and Formatter Configurations ---
-
-[tool.black]
-line-length = 135
-target-version = ['py312']
-include = '\.pyi?$'
-# extend-exclude is not directly supported in pyproject.toml like in a .python-black file.
-# Use ruff's exclude or top-level exclude if needed for global exclusions.
-
-[tool.ruff]
-# Assume Python 3.12
-target-version = "py312"
-line-length = 135
-indent-width = 4
-
-# Same as Black.
-# src = ["app"] # Define if your source code is not in the root, e.g., in an 'app' or 'src' directory
-
-# Exclude a variety of commonly ignored directories.
-exclude = [
-    ".bzr",
-    ".direnv",
-    ".eggs",
-    ".git",
-    ".git-rewrite",
-    ".hg",
-    ".mypy_cache",
-    ".nox",
-    ".pants.d",
-    ".pytype",
-    ".ruff_cache",
-    ".svn",
-    ".tox",
-    ".venv",
-    "__pypackages__",
-    "_build",
-    "buck-out",
-    "build",
-    "dist",
-    "node_modules",
-    "venv",
-    "migrations", # Typically, auto-generated migration files are excluded
-    "tests/fixtures", # Often fixtures are not linted strictly
-    "docs",
-    "dataset-builder-core/core-service/.venv", # Ensure venv inside subprojects are excluded
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+addopts = [
+    "--verbose",
+    "--strict-markers",
+    "--tb=short",
+]
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
 ]
 
-[tool.ruff.lint]
-# Enable Pyflakes (F) and a subset of the pycodestyle (E, W) rules by default.
-# Select all rules from various plugins.
-select = [
-    "E", "W",  # pycodestyle errors and warnings
-    "F",      # pyflakes
-    "I",      # isort
-    "N",      # pep8-naming
-    "B",      # flake8-bugbear
-    "C90",    # mccabe complexity
-    "D",      # pydocstyle
-    "ANN",    # flake8-annotations (use with care, can be noisy)
-    "S",      # flake8-bandit (security)
-    "BLE",    # flake8-blind-except
-    "A",      # flake8-builtins
-    "T20",    # flake8-print
-    "PYI",    # flake8-pyi
-    "RUF",    # Ruff-specific rules
-    "PL",     # Pylint (selected rules)
-    "TRY",    # tryceratops (exception handling best practices)
-    "ERA",    # eradicate (commented-out code)
-    "PIE",    # flake8-pie
-    "TCH",    # flake8-type-checking
-    "PLC", "PLE", "PLR", "PLW", # Pylint conventions, errors, refactoring, warnings
-    "NPY",    # NumPy-specific rules (if using NumPy heavily)
-    "PERF",   # Perflint (performance)
-    "FLY",    # flynt (f-string usage)
-    "SIM",    # flake8-simplify
-    "TID",    # flake8-tidy-imports
-    "ARG",    # flake8-unused-arguments
-    "PTH",    # flake8-use-pathlib
-    "TD",     # flake8-todos
-    "FIX",    # flake8-fixme
-    "INP",    # flake8-no-pep420 (implicit namespace packages)
-    "UP",     # pyupgrade
+[tool.coverage.run]
+source = ["src"]
+omit = ["*/tests/*", "*/test_*.py"]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
 ]
-
-ignore = [
-    "N999",            # Invalid module name (if sub-projects have names like core-service)
-    "D100", "D101", "D102", "D103", "D104", "D105", "D106", "D107", # Missing docstrings (can be enabled selectively)
-    "ANN101", "ANN102", # Missing type hints for self/cls (can be too verbose)
-    "ANN201", "ANN202", # Missing return type hints for public/private functions
-    "S101",            # Use of assert (common in tests)
-    "TRY003",          # Avoid specifying long messages outside the exception class
-    "FIX002",          # TODO comments
-]
-
-# Allow unused variables when underscore-prefixed.
-dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
-
-[tool.ruff.lint.per-file-ignores]
-"__init__.py" = ["F401", "D104"]
-"tests/**/*.py" = ["S101", "D103", "ANN001", "ANN201", "ARG001", "ARG002"]
-"app/core/config/settings_manager.py" = ["RUF012"] # for mutable class attributes used in singleton
-
-[tool.ruff.lint.mccabe]
-# Unlike Flake8, default to a complexity level of 10.
-max-complexity = 15 # Adjust as needed
-
-[tool.ruff.lint.isort]
-# Specify the known first-party modules.
-known-first-party = ["app", "dataset_builder_core"]
-force-sort-within-sections = true
-combine-as-imports = true
-profile = "black" # Ensures compatibility with Black formatting
-
-[tool.ruff.lint.pydocstyle]
-convention = "google" # or "numpy", "pep257"
-
-[tool.ruff.format]
-# Like Black, use double quotes for strings.
-quote-style = "double"
-# Like Black, indent with spaces, rather than tabs.
-indent-style = "space"
-# Like Black, respect magic trailing commas.
-magic-trailing-comma = "respect"
-# Like Black, automatically detect the appropriate line ending.
-line-ending = "auto"
-
-
-[tool.mypy]
-python_version = "3.12"
-# namespace_packages = true # if you use namespace packages
-# explicit_package_bases = true # if you use namespace packages
-
-# Path to find stubs and typeshed
-# mypy_path = "stubs"
-
-# Strictness options - aim for these but adjust if too noisy initially
-strict = true
-warn_unused_configs = true
-# warn_return_any = true # Covered by strict=true
-# disallow_untyped_defs = true # Covered by strict=true
-disallow_any_unimported = true
-disallow_incomplete_defs = true
-check_untyped_defs = true
-disallow_untyped_decorators = true
-warn_redundant_casts = true
-warn_unused_ignores = true
-warn_no_return = true
-
-# Imports
-ignore_missing_imports = false # Be explicit about missing stubs
-follow_imports = "normal" # default, can be silent, skip, error
-
-# Platform configuration
-# platform = linux
-
-# Show error codes
-show_error_codes = true
-
-# Pretty output
-pretty = true
-
-# Per-module options (example)
-# [[tool.mypy.overrides]]
-# module = [
-#     "some_untyped_library.*"
-# ]
-# ignore_missing_imports = true
-
-# Exclude files or directories (uses .gitignore syntax)
-exclude = [
-    '\.venv',
-    'build/',
-    'dist/',
-    'node_modules/',
-    'tests/fixtures/',
-    'migrations/',
-    'dataset-builder-core/core-service/.venv'
-]
-
-# Enable plugins if you use them (e.g., for Pydantic or Django)
-# plugins = [
-#   "pydantic.mypy"
-# ]
-
-# [tool.pydantic-mypy]
-# init_forbid_extra = true
-# init_typed = true
-# warn_required_dynamic_aliases = true
-# warn_untyped_fields = true

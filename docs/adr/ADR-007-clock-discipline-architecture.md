@@ -96,3 +96,11 @@ class Clock(Protocol):
 1. **Never import `datetime` for current time**.
 2. **Never import `time.sleep`**.
 3. **Always use `self.clock.now()` and `await self.clock.sleep()`**.
+
+---
+
+## References
+
+- [Time Discipline Instructions](../../.github/instructions/time-discipline.instructions.md)
+- [Testing Instructions](../../.github/instructions/testing.instructions.md)
+- [ADR-012: Resilience Philosophy](ADR-012-resilience-philosophy.md)

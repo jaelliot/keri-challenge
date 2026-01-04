@@ -35,9 +35,9 @@ We adopt a **5-phase documentation-first development workflow** for all architec
 - Add migration status documents if current code differs.
 - Include code examples showing target patterns.
 
-### Phase 3: Rules Update
-- Update `.cursor/rules/*.mdc`.
-- Update `.cursor/rules/RULES_INDEX.md`.
+### Phase 3: Instructions Update
+- Update `.github/instructions/*.instructions.md`.
+- Ensure glob patterns match affected files.
 - Document anti-patterns.
 
 ### Phase 4: Quality Gates Update

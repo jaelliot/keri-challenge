@@ -126,5 +126,7 @@ async def post_event_resilient(clock: Clock, url: str, event: bytes):
 
 ## References
 
-- [Project Charter](../../.cursor/rules/01-project-charter.mdc)
+- [Project Charter Instructions](../../.github/instructions/project-charter.instructions.md)
+- [Resilience Instructions](../../.github/instructions/resilience.instructions.md)
 - [Clock Architecture ADR](ADR-007-clock-discipline-architecture.md)
+- [Separation of Concerns ADR](ADR-001-separation-of-concerns.md)

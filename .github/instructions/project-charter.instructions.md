@@ -1,0 +1,78 @@
+---
+applyTo: "**/*"
+# Project Charter - KERI Foundation Mission, Core Values, and Architectural Manifesto
+---
+## 🎯 Mission
+**"1-Click KERI"**: Enable any adopter to download and deploy a functional decentralized trust infrastructure instantly.
+We contribute to the **Trust over IP (ToIP)** layer of the internet using **Open Standards** (KERI, ACDC, CESR) under the Linux Foundation.
+
+## 🌟 Core Values
+
+### 1. End-Verifiability (Zero Trust in Infrastructure)
+-   **Philosophy**: The "Middle" (network, witnesses) is irrelevant to trust. Only the **Controller** (Edge) is trusted.
+-   **Mechanism**: **Signed-Everything**. Every state change is a cryptographically signed event in an append-only log.
+-   **Goal**: Ambient Verifiability. Anyone, anywhere can verify the source of data without a trusted third party.
+
+### 2. Python First & Foremost
+-   **"Python is our first love."** Write idiomatic, production-grade Python (Core Library `keripy`).
+-   **Ecosystem**: Leverage the rich ecosystem for cryptography and networking.
+-   **Interoperability**: Integrate seamlessly with C/Rust extensions or Pyodide where performance or browser compatibility demands it.
+
+### 3. Open Source Ethos
+-   **License**: All code is Apache2.
+-   **Standards**: Strictly adhere to **KERI**, **ACDC**, and **CESR** specifications.
+-   **Transparency**: Build for public auditability.
+
+## 🏗️ Architectural Principles
+
+### The "5 Ws" Architecture
+1.  **Wallets (Controllers)**: The user/edge. Holds private keys. Creates the Key Event Log (KEL).
+2.  **Witnesses**: "Dumb" servers. Validate signatures and order only. Provide the "First-Seen" guarantee to prevent duplicity.
+3.  **Watchers**: Auditors. Crawl witnesses to detect duplicity or collusion.
+4.  **Web**: Transport layer (HTTP/TCP). KERI is transport-agnostic.
+5.  **Wizards**: Tools for easy setup and configuration ("1-click").
+
+### KERI Core Primitives
+-   **AID (Autonomic Identifier)**: Self-certifying identifiers derived cryptographically from the initial public key(s).
+    -   *Ephemeral*: One-session, no rotation.
+    *   *Persistent*: Supports rotation, requires a KEL.
+-   **KEL (Key Event Log)**: The "Blockchain" for one ID. An ordered, hash-linked chain of events (`icp` -> `rot` -> `ixn`).
+-   **CESR**: Composable Event Streaming Representation for compact, text-safe (Base64) crypto primitives.
+
+### Key Management: Pre-Rotation
+-   **The Innovation**: Commit to the *next* key set (via hash) upon current rotation, but do *not* expose it.
+-   **Security**: Prevents attackers from taking control even if current keys are compromised (they can't sign the next rotation).
+-   **Post-Quantum**: Hashing protects public keys from quantum inversion until the moment of use.
+
+### Distributed & Asynchronous
+-   **Event Sourcing**: The system of record is the verifiable event log (KEL), not just the current state.
+-   **Coroutines**: Utilize `asyncio` for high-throughput, low-latency I/O.
+-   **First-Seen Policy**: The first valid event received for Sequence N is the *only* valid event. Race conditions in the network stack must be managed to respect this.
+-   **KAWA**: KERI Algorithm for Witness Agreement. Lightweight consensus on "witnessing" (ordering/existence), not content logic.
+
+## ⚖️ Quality Bar & Compliance Standards
+
+We are building a production-grade Trust Spanning Layer, not a prototype.
+
+### Decision Framework for New Features
+1.  **Legal Test**: Would this system pass a SOC 2 Type II or eIDAS audit?
+2.  **3 AM Test**: Can production issues be debugged at 3 AM with logs alone?
+3.  **Solo Developer Test**: Is the code maintainable enough for a solo maintainer to take a vacation?
+4.  **ROI Test**: Does this save more time in firefighting than it costs to implement?
+
+### Production-Grade Requirements
+- ✅ **Graceful Degradation**: System must handle partial failures (e.g., some witnesses offline) without collapse.
+- ✅ **Structured Observability**: Debug production issues with structured logs (JSON) and traces.
+- ✅ **Fail-Fast**: Bad configuration must prevent startup rather than causing runtime panics.
+- ✅ **Deterministic Testing**: Use injected clocks and mockable external dependencies to ensure tests are not flaky.
+
+### Compliance Standards
+- **Cryptographic Agility**: Support for post-quantum algorithms (as per KERI spec).
+- **Audit Logging**: Tamper-evident logging of all key events (KELs are inherently audit logs).
+- **PII Protection**: Careful handling of private keys and personal data; preference for pseudonymous identifiers (AIDs).
+
+## 🛠️ Operational Standards
+-   **Testing**: Rigorous unit and functional testing (Pytest) with no flaky tests allowed.
+-   **Parsers**: Strict stream parsers for CESR/JSON serialization.
+-   **OOBI**: Out-Of-Band Introduction protocols are critical for bootstrapping connections (URL + AID).
+-   **CI/CD**: Automated workflows via GitHub Actions.
