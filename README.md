@@ -32,7 +32,7 @@ pip install -e ".[dev]"
 
 ```bash
 # Run the API integration tests
-pytest tests/api/test_registration.py -v
+python -m pytest tests/api/test_registration.py -v
 
 # Expected output:
 # ========================== 11 passed in ~6s ==========================
@@ -155,7 +155,7 @@ For evaluators running the challenge:
 pip install -e ".[dev]"
 
 # 2. Run tests
-pytest tests/api/test_registration.py -v
+python -m pytest tests/api/test_registration.py -v
 
 # 3. Verify all pass
 # Expected: 11 passed in ~6 seconds

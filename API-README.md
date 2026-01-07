@@ -37,13 +37,13 @@ pip install -e ".[dev]"
 
 ```bash
 # Run all API tests
-pytest tests/api/test_registration.py -v
+python -m pytest tests/api/test_registration.py -v
 
 # Run with coverage
-pytest tests/api/ --cov=src/api --cov-report=html
+python -m pytest tests/api/ --cov=src/api --cov-report=html
 
 # Run a specific test
-pytest tests/api/test_registration.py::test_post_register_valid_signature -v
+python -m pytest tests/api/test_registration.py::test_post_register_valid_signature -v
 ```
 
 ### Expected Output
